@@ -2,7 +2,7 @@
 
 **Frostbite* is *Breeanna Ebert*'s implementation of [*Design Document*](http://graphics.cs.cmu.edu/courses/15-466-f17/game1-designs/rmukunda/) for game1 in 15-466-f17.
 
-![screenshot](https://github.com/turbotortoise/15-466-f17-base1/screenshots/Game1Screenshot.png/to/img.png)*
+![screenshot](https://github.com/turbotortoise/15-466-f17-base1/master/screenshots/Game1Screenshot.png)*
 
 ## Asset Pipeline
 
