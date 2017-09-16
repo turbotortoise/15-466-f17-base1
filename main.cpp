@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 	//Configuration:
 	struct {
 		std::string title = "Game1: Text/Tiles";
-		glm::uvec2 size = glm::uvec2(640, 480);
+		glm::uvec2 size = glm::uvec2(640, 640);
 	} config;
 
 	//------------  initialization ------------
@@ -84,19 +84,57 @@ int main(int argc, char **argv) {
 	//texture:
 	GLuint tex = 0;
 	glm::uvec2 tex_size = glm::uvec2(0,0);
+	glm::uvec2 wolf_size = glm::uvec2(0,0);
 
 	{ //load texture 'tex':
 		std::vector< uint32_t > data;
+		//load png files
 		if (!load_png("elements.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
+			std::cerr << "Failed to load elements texture." << std::endl;
+			exit(1);
+		}
+		if (!load_png("wolf.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
 			std::cerr << "Failed to load texture." << std::endl;
 			exit(1);
 		}
+		if (!load_png("leopard.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
+			std::cerr << "Failed to load leopard texture." << std::endl;
+			exit(1);
+		}
+		if (!load_png("lion.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
+			std::cerr << "Failed to load lion texture." << std::endl;
+			exit(1);
+		}		
+		if (!load_png("player.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
+			std::cerr << "Failed to load player texture." << std::endl;
+			exit(1);
+		}
+		if (!load_png("meat.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
+			std::cerr << "Failed to load meat texture." << std::endl;
+			exit(1);
+		}
+		if (!load_png("tree.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
+			std::cerr << "Failed to load tree texture." << std::endl;
+			exit(1);
+		}
+		if (!load_png("wizard.png", &tex_size.x, &tex_size.y, &data, LowerLeftOrigin)) {
+			std::cerr << "Failed to load wizard texture." << std::endl;
+			exit(1);
+		}
+		
 		//create a texture object:
 		glGenTextures(1, &tex);
 		//bind texture object to GL_TEXTURE_2D:
 		glBindTexture(GL_TEXTURE_2D, tex);
 		//upload texture data from data:
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		/*glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size.x, tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[0]);*/
 		//set texture sampling parameters:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -197,10 +235,126 @@ int main(int argc, char **argv) {
 		return info;
 	};
 
+	auto random_float = [](float a, float b) {
+		float random = ((float) rand()) / (float) RAND_MAX;
+		float r = random * (b - a);
+		return (a + r);
+	};
+
+	auto set_random_pos = [](glm::vec2 *objpos) {
+		float random_x = ((float) rand()) / (float) RAND_MAX;
+		float random_y = ((float) rand()) / (float) RAND_MAX;
+		float r_x = (random_x * (2.0f) - 1.0f);
+		float r_y = (random_y * (2.0f) - 1.0f);
+		objpos->x = r_x;
+		objpos->y = r_y;
+		return objpos;
+	};
+
 
 	//------------ game state ------------
 
+	//Initialization
+
+	//Mouse
 	glm::vec2 mouse = glm::vec2(0.0f, 0.0f); //mouse position in [-1,1]x[-1,1] coordinates
+
+	//set positions of all living things
+	glm::vec2 playerpos = glm::vec2(0.0f, 0.0f);
+	glm::vec2 wolfpos = glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f));
+	glm::vec2 lionpos = glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f));
+	glm::vec2 leopos = glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f));
+	glm::vec2 wizardpos = glm::vec2(1.6f, 0.2f); //off screen, but exists initially
+
+	//place treeses
+	struct tree {
+		glm::vec2 position;
+		float height;
+		tree(glm::vec2 position, float height) : position(position), height(height) {}
+	};
+
+	std::vector<tree> treeScreen1;
+	std::vector<tree> treeScreen2;
+	std::vector<tree> treeScreen3;
+
+	//place trees randomly throughout world
+	for (int i = 0; i < 8; i++) {
+		treeScreen1.emplace_back(glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f)), 1.0f);
+		treeScreen2.emplace_back(glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f)), 1.0f);
+		treeScreen3.emplace_back(glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f)), 1.0f);
+	}
+
+	//player bound variables
+	float playerHealth = 1.0f;
+	float playerTemp = 1.0f;
+	//damage applied every frame from climate
+	float healthDecay = 0.00037f;
+	float tempDecay = 0.000037f;
+	//inventory
+	int lumber = 0;
+	int meat = 0;
+	//set amounts of trees
+	int numTreesperScreen = 8;
+	//amount of health meat replaces
+	float meatRegen = 0.1f;
+	//replenish 75% of health when wizard is offered meat
+	float wizardRegen = 0.75f;
+
+	//boolean triggers
+	bool wolfCollide = false;
+	bool lionCollide = false;
+	bool leoCollide = false;
+	bool wizardCollide = false;
+	bool treeCollide = false;
+	int treeCollideInstance = -1;
+
+	//set initial speeds of interactable things
+	float playerSpeed = 0.05f;
+	float wolfSpeed = 0.0002f;
+	float lionSpeed = 0.0003f;
+	float leoSpeed = 0.0005f;
+	float treeGrowRate = 0.0002f;
+
+	//set amounts of meat animals drop
+	int wolfMeat = 1;
+	int leopardMeat = 2;
+	int lionMeat = 3;
+
+	//set amount of damage each animal causes per frame on contact
+	float wolfDamage = 0.0002f;
+	float leoDamage = 0.0003f;
+	float lionDamage = 0.0005f;
+
+	//animal livelyhood states
+	bool wolfIsAlive = true;
+	bool leoIsAlive = true;
+	bool lionIsAlive = true;
+
+	//set aggravated animal radius boxes
+	float boxSizeMultiplier = 1000.0f;
+	float wolfBox = wolfSpeed * boxSizeMultiplier;
+	float lionBox = lionSpeed * boxSizeMultiplier;
+	float leoBox = leoSpeed * boxSizeMultiplier;
+	float wizardBox = 0.1f;
+	float treeBox = 0.05f;
+
+	//set timer to respawn
+	float wolfDeadTime = 0.0f;
+	float leoDeadTime = 0.0f;
+	float lionDeadTime = 0.0f;
+
+	//set respawn times
+	float wolfSpawnTime = 30.0f; //wolf spawns every 30 seconds
+	float leoSpawnTime = 60.0f; //leopard spawns every minute
+	float lionSpawnTime = 120.0f; //lion spawns every other minutes
+	float treeSpawnTime = 120.0f; //2 minutes to respawn tree
+
+	//timer tracking total time of current game session
+	float totalTime = 0.0f;
+
+	//floats represent bool of that screens appearance
+	//begin on middle screen
+	glm::vec3 screen = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	struct {
 		glm::vec2 at = glm::vec2(0.0f, 0.0f);
@@ -220,9 +374,161 @@ int main(int argc, char **argv) {
 				mouse.x = (evt.motion.x + 0.5f) / float(config.size.x) * 2.0f - 1.0f;
 				mouse.y = (evt.motion.y + 0.5f) / float(config.size.y) *-2.0f + 1.0f;
 			} else if (evt.type == SDL_MOUSEBUTTONDOWN) {
-			} else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE) {
-				should_quit = true;
-			} else if (evt.type == SDL_QUIT) {
+			} else if (evt.type == SDL_KEYDOWN) {
+				if (evt.key.keysym.sym == SDLK_ESCAPE)
+					should_quit = true;
+
+				//for walking
+				else if (evt.key.keysym.sym == SDLK_w) {
+					if (playerpos.y <= 1.0f)
+						playerpos.y += playerSpeed;
+				}
+				else if (evt.key.keysym.sym == SDLK_s) {
+					//check for lower boundaries
+					if (playerpos.y >= -1.0f)
+						playerpos.y -= playerSpeed;
+				}
+				else if (evt.key.keysym.sym == SDLK_d) {
+					//check for right boundaries
+					if (screen.z != 1.0f) {
+						//currently not on leftmost screen
+						if (playerpos.x >= 1.0f) {
+							//place player into next screen
+							playerpos.x = -std::abs(playerpos.x);
+							if (screen.x == 1.0f) {
+								screen.x = 0.0f;
+								screen.y = 1.0f;
+								//set random positions to animals since screens are separated
+								if (wolfIsAlive) set_random_pos(&wolfpos);
+								if (leoIsAlive) set_random_pos(&leopos);
+								if (lionIsAlive) set_random_pos(&lionpos);
+								wizardpos -= glm::vec2 (1.0f, 0.0f);
+							}
+							else if (screen.y == 1.0f) {
+								screen.y = 0.0f;
+								screen.z = 1.0f;
+								if (wolfIsAlive) set_random_pos(&wolfpos);
+								if (leoIsAlive) set_random_pos(&leopos);
+								if (lionIsAlive) set_random_pos(&lionpos);
+								wizardpos -= glm::vec2 (1.0f, 0.0f);
+							}
+						}
+						else
+							playerpos.x += playerSpeed;
+					}
+					else {
+						if (playerpos.x < 1.0f)
+							playerpos.x += playerSpeed;
+					}
+				}
+				else if (evt.key.keysym.sym == SDLK_a) {
+					//check for left boundaries
+					if (screen.x != 1.0f) {
+						//currently not on leftmost screen
+						if (playerpos.x <= -1.0f) {
+							//place player into next screen
+							playerpos.x = std::abs(playerpos.x);
+							if (screen.y == 1.0f) {
+								screen.y = 0.0f;
+								screen.x = 1.0f;
+								if (wolfIsAlive) set_random_pos(&wolfpos);
+								if (leoIsAlive) set_random_pos(&leopos);
+								if (lionIsAlive) set_random_pos(&lionpos);
+								wizardpos += glm::vec2 (1.0f, 0.0f);
+							}
+							else if (screen.z == 1.0f) {
+								screen.z = 0.0f;
+								screen.y = 1.0f;
+								if (wolfIsAlive) set_random_pos(&wolfpos);
+								if (leoIsAlive) set_random_pos(&leopos);
+								if (lionIsAlive) set_random_pos(&lionpos);
+								wizardpos += glm::vec2(1.0f, 0.0f);
+							}
+						}
+						else
+							playerpos.x -= playerSpeed;
+					}
+					else {
+						if (playerpos.x > -1.0f)
+							playerpos.x -= playerSpeed;
+					}
+				}
+
+				//for interaction
+				else if (evt.key.keysym.sym == SDLK_x) {
+					//chop down tree or attack
+					//animals
+					if (wolfCollide) {
+						wolfCollide = false;
+						wolfSpeed = 0.0f;
+						wolfpos = glm::vec2(10.0f, 10.0f);
+					}
+					else if (leoCollide) {
+						leoCollide = false;
+						leoSpeed = 0.0f;
+						leopos = glm::vec2(10.0f, 10.0f);
+					}
+					else if (lionCollide) {
+						lionCollide = false;
+						lionSpeed = 0.0f;
+						lionpos = glm::vec2(10.0f, 10.0f);
+					}
+					//tree
+					if ((treeCollide) && (treeCollideInstance >= 0)) {
+						if (screen.x == 1.0) {
+							treeScreen1[treeCollideInstance].height = 0.0f;
+						}
+						else if (screen.y == 1.0) {
+							treeScreen2[treeCollideInstance].height = 0.0f;
+						}
+						else
+							treeScreen3[treeCollideInstance].height = 0.0f;
+
+					}
+
+
+				}
+				else if (evt.key.keysym.sym == SDLK_f) {
+					if (lumber > 0)
+						lumber --;
+				}
+				else if (evt.key.keysym.sym == SDLK_e) {
+					if (meat > 0) {
+						meat --;
+						if ((playerHealth + meatRegen) > 1.0f)
+							playerHealth = 1.0f;
+						else
+							playerHealth += meatRegen;
+					}
+				}
+				else if (evt.key.keysym.sym == SDLK_c) {
+					if (wolfCollide)
+						meat += wolfMeat;
+					else if (leoCollide)
+						meat += leopardMeat;
+					else if (lionCollide)
+						meat += lionMeat;
+					//Player interacting with wizard
+					else if (wizardCollide) {
+
+						if (meat > 0) {
+							meat --;
+							if ((playerHealth + wizardRegen) > 1.0f)
+								playerHealth = 1.0f;
+							else
+								playerHealth += wizardRegen;
+						}
+					    if (lumber > 0) {
+					    	lumber --;
+					    	if ((playerHealth + wizardRegen) > 1.0f)
+					    		playerHealth = 1.0f;
+					    	else
+					    		playerHealth += wizardRegen;
+					    }
+					}
+				}
+			}
+			else if (evt.type == SDL_QUIT) {
 				should_quit = true;
 				break;
 			}
@@ -233,6 +539,7 @@ int main(int argc, char **argv) {
 		static auto previous_time = current_time;
 		float elapsed = std::chrono::duration< float >(current_time - previous_time).count();
 		previous_time = current_time;
+		totalTime += elapsed;
 
 		{ //update game state:
 			(void)elapsed;
@@ -272,13 +579,118 @@ int main(int argc, char **argv) {
 				verts.emplace_back(verts.back());
 			};
 
+			//if the player is close enough to an animal, the animal will run towards player
+			auto collision = [&playerpos](glm::vec2 *spritepos, float spriteRad, float spriteSpeed, bool *collision) {
+				if ((playerpos.x > (spritepos->x - spriteRad)) && 
+					(playerpos.x < (spritepos->x + spriteRad)) &&
+					(playerpos.y > (spritepos->y - spriteRad)) &&
+					(playerpos.y < (spritepos->y + spriteRad))) {
+					//find vector to player pos, update position
+					//spritepos->y = spritepos->y + spriteSpeed;
+					if ((playerpos.x - spritepos->x) < 0)
+						spritepos->x -= spriteSpeed;
+					else if ((playerpos.x - spritepos->x) > 0)
+						spritepos->x += spriteSpeed;
+					if ((playerpos.y - spritepos->y) < 0)
+						spritepos->y -= spriteSpeed;
+					else if ((playerpos.y - spritepos->y) > 0)
+						spritepos->y += spriteSpeed;
+					*collision = true;
+				}
+				else
+					collision = false;
+			};
+
+			//if animal reaches player, cause damage every frame
+			auto direct_collision = [&playerpos, &playerHealth](glm::vec2 *spritepos, float spriteRad, float spriteDamage) {
+				if ((playerpos.x > (spritepos->x - spriteRad)) && 
+					(playerpos.x < (spritepos->x + spriteRad)) &&
+					(playerpos.y > (spritepos->y - spriteRad)) &&
+					(playerpos.y < (spritepos->y + spriteRad))) {
+					playerHealth -= spriteDamage;
+				}
+			};
+
+			//Constant decay on player
+			playerHealth -= healthDecay;
+			playerTemp -= tempDecay;
+
+			if (playerHealth <= 0.0f)
+				playerSpeed = 0.0f; //can't move if you're dead
+
+			//respawn animals if respawn timer is up
+			if (!wolfIsAlive && ((totalTime - wolfDeadTime) > wolfSpawnTime)) {
+				wolfIsAlive = true;;
+				wolfSpeed  = 0.0002f * (totalTime / 100.0f);
+				wolfpos = glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f));
+				//each time an animal respawns, collision detection boxes on all animals will increase
+				boxSizeMultiplier *= 1.5f;
+			}
+			if (!leoIsAlive && ((totalTime - leoDeadTime) > leoSpawnTime)) {
+				leoIsAlive = true;
+				leoSpeed = 0.0003f * (totalTime / 100.0f);
+				leopos = glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f));
+				boxSizeMultiplier *= 1.5f;
+			}
+			if (!lionIsAlive && ((totalTime - lionDeadTime) > lionSpawnTime)) {
+				lionIsAlive = true;
+				lionSpeed = 0.0005f * (totalTime / 100.0f);
+				lionpos = glm::vec2(random_float(-1.0f, 1.0f), random_float(-1.0f, 1.0f));
+				boxSizeMultiplier *= 1.5f;
+			}
+
+			//draw appropriate background
+			rect(glm::vec2(-10.0f, 10.0f), glm::vec2(20.0f), glm::u8vec4(0xff, 0xff, 0xff, 0xff));
 
 			//Draw a sprite "player" at position (5.0, 2.0):
-			static SpriteInfo player = load_sprite("player"); //TODO: hoist
-			draw_sprite(player, glm::vec2(5.0, 2.0));
+			static SpriteInfo player = load_sprite("player");
+			draw_sprite(player, playerpos * camera.radius + camera.at);
+			static SpriteInfo wolf = load_sprite("wolf");
+			draw_sprite(wolf, wolfpos * camera.radius + camera.at);
+			static SpriteInfo leopard = load_sprite("leopard");
+			draw_sprite(leopard, leopos * camera.radius + camera.at);
+			static SpriteInfo lion = load_sprite("lion");
+			draw_sprite(lion, lionpos * camera.radius + camera.at);
+			static SpriteInfo wizard = load_sprite("wizard");
+			draw_sprite(wizard, wizardpos * camera.radius + camera.at);
+			static SpriteInfo tree = load_sprite("tree");
+			static SpriteInfo stump = load_sprite("stump");
+			if (screen.x == 1.0f) {
+				for (int i = 0; i < numTreesperScreen; i ++) {
+					if (treeScreen1[i].height < 1.0f)  {
+						draw_sprite(stump, treeScreen1[i].position * camera.radius + camera.at);
+						if ((treeScreen1[i].height + treeGrowRate) > 1.0f)
+							treeScreen1[i].height = 1.0f;
+						else
+							treeScreen1[i].height += treeGrowRate;
+					}
+					else {
+						draw_sprite(tree, treeScreen1[i].position * camera.radius + camera.at);
+						collision(&(treeScreen1[i].position * camera.radius + camera.at), treeBox, 0.0f, &treeCollide);
+					}
+				}
+			}
+			else if (screen.y == 1.0f) {
+				for (int i = 0; i < 8; i ++) {
+					if (treeScreen2[i].height == 0.0f)
+						draw_sprite(stump, treeScreen2[i].position * camera.radius + camera.at);
+					else
+						draw_sprite(tree, treeScreen2[i].position * camera.radius + camera.at);
+				}
+			}
+			else if (screen.z == 1.0f) {
+				for (int i = 0; i < 8; i ++) {
+					if (treeScreen3[i].height == 0.0f)
+						draw_sprite(stump, treeScreen3[i].position * camera.radius + camera.at);
+					else
+						draw_sprite(tree, treeScreen3[i].position * camera.radius + camera.at);
+				}
+			}
 
-			rect(glm::vec2(0.0f, 0.0f), glm::vec2(4.0f), glm::u8vec4(0xff, 0x00, 0x00, 0xff));
-			rect(mouse * camera.radius + camera.at, glm::vec2(4.0f), glm::u8vec4(0xff, 0xff, 0xff, 0x88));
+			collision(&wolfpos, wolfBox, wolfSpeed, &wolfCollide);
+			collision(&leopos, leoBox, leoSpeed, &leoCollide);
+			collision(&lionpos, lionBox, lionSpeed, &lionCollide);
+			collision(&wizardpos, wizardBox, 0.0f, &wizardCollide);
 
 
 			glBindBuffer(GL_ARRAY_BUFFER, buffer);

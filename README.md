@@ -1,28 +1,24 @@
-NOTE: please fill in the first section with information about your game.
+# *Frostbite*
 
-# *Game Title*
+**Frostbite* is *Breeanna Ebert*'s implementation of [*Design Document*](http://graphics.cs.cmu.edu/courses/15-466-f17/game1-designs/rmukunda/) for game1 in 15-466-f17.
 
-*Game Title* is *Your Name*'s implementation of [*Design Document*](http://graphics.cs.cmu.edu/courses/15-466-f17/game1-designs/put-real-link-here) for game1 in 15-466-f17.
-
-*Include a Screenshot Here*
-
-## Build Notes
-
-*Include any special notes or steps required to build your game here. If there are no special notes, delete this section.*
+![screenshot](https://raw.githubusercontent.com/username/projectname/branch/path/to/img.png)*
 
 ## Asset Pipeline
 
-*Briefly describe the asset pipeline for this game. What sorts of source files are used? How are they processed? How are they loaded?*
+*For the Asset Pipeline, I exported each element in the provided .svg file into its own .png file. I loaded each one into the game.*
 
 ## Architecture
 
-*Provide a brief introduction to how you implemented the design. Talk about the basic structure of your code.*
+*The code is divided into initialization, game state, and draw state. All variables are initialized, updated within the game state, and drawn in the draw state.*
 
 ## Reflection
 
-*Reflect on the assignment. What was difficult? What worked well? If you were doing it again, what would you change?*
+*The state of the animals and trees once the player destroys these objects is ambiguous. The animals should respawn, and the trees should grow over time. I can't simply instantiate and destroy objects, especially if I need to respawn the object into its original space.
+I resolved this by creating states for the trees, and an alive and dead state for the animals. If the tree has recently been cut, meaning that it hasn't reached full height yet, then it appears as a cut tree. Once it reaches full height, then the tree sprite appears. If an animal is dead, is simply is moved off screen, and its speed is decreased.
+I also did not spawn meat and lumber when these objects are destroyed, so they are simply automatically added to inventory.*
 
-*Reflect on the design document. What was clear and what was ambiguous? How did you resolve the ambiguities?*
+*Interaction with the wizard was not clear, and the wizard doesn't seem to be related too much towards the theme of the game. I wasn't sure if the player receives both a health boost and slower temperature decline, or whether the player had to choose one. I chose to activate both.*
 
 
 # About Base1

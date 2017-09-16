@@ -17,7 +17,7 @@ objs/main.obj : main.cpp Draw.hpp GL.hpp glcorearb.h
 	if not exist objs mkdir objs
 	$(CPP) $(INCLUDES) /Foobjs/main.obj main.cpp
 
-objs/draw.obj : Draw.cpp Draw.hpp GL.hpp glcorearb.h
+objs/draw.obj : GL.hpp glcorearb.h
 	if not exist objs mkdir objs
 	$(CPP) $(INCLUDES) /Foobjs/Draw.obj Draw.cpp
 
